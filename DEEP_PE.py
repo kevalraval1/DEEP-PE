@@ -31,16 +31,22 @@ def main():
 
     for line in parsedList:
         changeList = line[4].split(" ")
-        originalBase = changeList[3]
-        newBase = changeList[1].lower()
+        if len(changeList) == 9:
+            originalBase = changeList[3]
+            originalBase2 = changeList[8]
+        else:
+            originalBase = changeList[3]
         RTTLength = int(line[5])
         extension = line[7]
-        count = 0
         searchSeq = "".join(extension[0:RTTLength])
         tempList = list(searchSeq)
+        baseCount = 0
         for count, base in enumerate(tempList):
-            if base.islower():
+            if base.islower() and baseCount == 0:
                 tempList[count] = originalBase
+                baseCount += 1
+            elif base.islower() and baseCount > 0:
+                tempList[count] = originalBase2
         searchSeq = "".join(tempList)
         result = re.search(searchSeq, inputFASTA, re.IGNORECASE)
         print (result)
