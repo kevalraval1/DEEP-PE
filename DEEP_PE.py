@@ -31,10 +31,10 @@ def main():
 
     for line in parsedList:
         changeList = line[4].split(" ")
-        if len(changeList) == 9:
+        if (len(changeList) == 10) and (changeList[2] == "to"):
             originalBase = changeList[3]
             originalBase2 = changeList[8]
-        else:
+        elif (len(changeList) == 4) and (changeList[2] == "to"):
             originalBase = changeList[3]
         RTTLength = int(line[5])
         extension = line[7]
@@ -48,7 +48,7 @@ def main():
             elif base.islower() and baseCount > 0:
                 tempList[count] = originalBase2
         searchSeq = "".join(tempList)
-        result = re.search(searchSeq, inputFASTA, re.IGNORECASE)
+        result = re.search(searchSeq, inputFASTA.get(), re.IGNORECASE)
         print (result)
 
 canvas = Canvas(window, height = 100, width = 600)
