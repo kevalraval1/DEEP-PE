@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import filedialog
 import regex as re
+from Bio.seq import seq
+
 
 window = Tk()
 window.title("DEEP-PE Searching Tool")
@@ -14,42 +16,58 @@ def selectFile():
         spaceText.window_create("end", window=label)
         spaceText.insert('end', '\n')
 
+
+def extensionFixer(edit, extSeq, RTLength, inputSeq):
+    if "insertion" in edit:
+        tempSeq = ""
+        for letter in extSeq:
+            if letter.islower():
+                continue
+            else:
+                tempSeq += letter
+        return tempSeq
+    elif "deletion" in edit:
+        basepairAmt = edit[3]
+        searchSeq = extSeq[RTLength:]
+        match = re.search(searchSeq, inputSeq)
+        start = match.start()
+        return inputSeq[start - (RTLength + basepairAmt):match.end()]
+    elif len(edit) == 10:
+        for count, letter in enumerate(extSeq):
+            if letter.islower():
+                extSeq[count] = edit[9]
+            return extSeq
+    else:
+        fixedCount = 0
+        for count, letter in enumerate(extSeq):
+            if letter.islower() and fixedCount == 0:
+                extSeq[count] = edit[22]
+                fixedCount += 1
+            elif letter.islower():
+                extSeq[count] = edit[9]
+        return extSeq
+
+def mutationChecker(RTLength, extSeq, inputSeq, mutationIndex):
+    searchSeq = extSeq[:RTLength]
+    match = re.search(searchSeq, inputSeq)
+    if match != None and (match.start() <= mutationIndex <= match.end()):
+        return (True, "+")
+    revInputSeq = Seq(inputSeq).reverse_complement()
+    match = re.search(searchSeq, revInputSeq)
+    if match != None and (match.start() <= mutationIndex <= match.end()):
+        return (True, "-")
+    return (False, "")
+
 def main():
-    file = open("DeepPE_Scores.txt", "r")
-    content = file.read()
-
-    contentList = content.splitlines()
-    del contentList[0]
-    print (contentList[0])
-    parsedList = []
-
-    for line in contentList:
-        tempSplit = line.split("\t")
-        parsedList.append(tempSplit)
-
-    print (parsedList[0])
-
-    for line in parsedList:
-        changeList = line[4].split(" ")
-        if (len(changeList) == 10) and (changeList[2] == "to"):
-            originalBase = changeList[3]
-            originalBase2 = changeList[8]
-        elif (len(changeList) == 4) and (changeList[2] == "to"):
-            originalBase = changeList[3]
-        RTTLength = int(line[5])
-        extension = line[7]
-        searchSeq = "".join(extension[0:RTTLength])
-        tempList = list(searchSeq)
-        baseCount = 0
-        for count, base in enumerate(tempList):
-            if base.islower() and baseCount == 0:
-                tempList[count] = originalBase
-                baseCount += 1
-            elif base.islower() and baseCount > 0:
-                tempList[count] = originalBase2
-        searchSeq = "".join(tempList)
-        result = re.search(searchSeq, inputFASTA.get(), re.IGNORECASE)
-        print (result)
+    dataDict = {}
+    inputFile = open(filename, "r")
+    inputFile.readline()
+    inputSeq = inputFASTA.get()
+    for line in inputFile:
+        line = line.split("\t")
+        #filter bad data here, skip and don't add to dictionary
+        key = line[8]
+        dataDict[key] = (line[2], line[3], line[4], line[5], line[6], line[7], line[9].strip("\n"))
 
 canvas = Canvas(window, height = 100, width = 600)
 canvas.pack()
