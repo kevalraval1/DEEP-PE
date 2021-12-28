@@ -3,7 +3,6 @@ from tkinter import filedialog
 import regex as re
 from Bio.seq import seq
 
-
 window = Tk()
 window.title("DEEP-PE Searching Tool")
 
