@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 import regex as re
-from Bio.seq import seq
+from Bio.Seq import Seq
 
 window = Tk()
 window.title("DEEP-PE Searching Tool")
@@ -15,8 +15,8 @@ def selectFile():
         spaceText.window_create("end", window=label)
         spaceText.insert('end', '\n')
 
-
-def extensionFixer(edit, extSeq, RTLength, inputSeq):
+def extensionFixer(edit, RTLength, extSeq, inputSeq):
+    editSplit = edit.split(" ")
     if "insertion" in edit:
         tempSeq = ""
         for letter in extSeq:
@@ -26,33 +26,40 @@ def extensionFixer(edit, extSeq, RTLength, inputSeq):
                 tempSeq += letter
         return tempSeq
     elif "deletion" in edit:
-        basepairAmt = edit[3]
-        searchSeq = extSeq[RTLength:]
+        basepairAmt = int(editSplit[1])
+        searchSeq = extSeq[int(RTLength):]
         match = re.search(searchSeq, inputSeq)
+        if match == None:
+            inputSeq = Seq(inputSeq).reverse_complement()._data
+            match = re.search(searchSeq, inputSeq)
         start = match.start()
-        return inputSeq[start - (RTLength + basepairAmt):match.end()]
-    elif len(edit) == 10:
+        return inputSeq[start - (int(RTLength) + basepairAmt):match.end()]
+    lowerCase = 0
+    for letter in extSeq:
+        if letter.islower():
+            lowerCase += 1
+    if lowerCase == 1:
         for count, letter in enumerate(extSeq):
             if letter.islower():
-                extSeq[count] = edit[9]
-            return extSeq
+                extSeq = extSeq[:count] + editSplit[3] + extSeq[count + 1:]
+        return extSeq
     else:
         fixedCount = 0
         for count, letter in enumerate(extSeq):
             if letter.islower() and fixedCount == 0:
-                extSeq[count] = edit[22]
+                extSeq = extSeq[:count] + editSplit[8] + extSeq[count + 1:]
                 fixedCount += 1
             elif letter.islower():
-                extSeq[count] = edit[9]
+                extSeq = extSeq[:count] + editSplit[3] + extSeq[count + 1:]
         return extSeq
 
 def mutationChecker(RTLength, extSeq, inputSeq, mutationIndex):
-    searchSeq = extSeq[:RTLength]
+    searchSeq = extSeq[:int(RTLength)]
     match = re.search(searchSeq, inputSeq)
     if match != None and (match.start() <= mutationIndex <= match.end()):
         return (True, "+")
     revInputSeq = Seq(inputSeq).reverse_complement()
-    match = re.search(searchSeq, revInputSeq)
+    match = re.search(searchSeq, revInputSeq._data)
     if match != None and (match.start() <= mutationIndex <= match.end()):
         return (True, "-")
     return (False, "")
@@ -62,11 +69,27 @@ def main():
     inputFile = open(filename, "r")
     inputFile.readline()
     inputSeq = inputFASTA.get()
+    for count, letter in enumerate(inputSeq):
+        if letter == "(":
+            mutationIndex = count + 1
+            break
+    inputSeq = inputSeq[:mutationIndex - 1] + inputSeq[mutationIndex] + inputSeq[mutationIndex + 2:]
+    mutationIndex -= 1
     for line in inputFile:
         line = line.split("\t")
-        #filter bad data here, skip and don't add to dictionary
-        key = line[8]
-        dataDict[key] = (line[2], line[3], line[4], line[5], line[6], line[7], line[9].strip("\n"))
+        extSeq = extensionFixer(line[4], line[6], line[7], inputSeq)
+        resultTup = mutationChecker(line[6], extSeq, inputSeq, mutationIndex)
+        if (resultTup[0]):
+            key = int(line[8])
+            dataDict[key] = (line[3], line[5], line[6], line[7], line[9].strip("\n"), resultTup[1])
+    inputFile.close()
+    dictItems = dataDict.items()
+    dictItems = sorted(dictItems)
+    outputFile = open("output.txt", "w")
+    outputFile.write("Guide\tExtension\tPBS\tRT Length\tScore\tPrediction Model\tStrand of Extension\n")
+    for item in dictItems:
+        outputFile.write(f"{item[1][0]}\t{item[1][3]}\t{item[1][1]}\t{item[1][2]}\t{item[0]}\t{item[1][4]}\t{item[1][5]}\n")
+    outputFile.close()
 
 canvas = Canvas(window, height = 100, width = 600)
 canvas.pack()
