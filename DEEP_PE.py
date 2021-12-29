@@ -60,7 +60,7 @@ def mutationChecker(RTLength, extSeq, inputSeq, mutationIndex):
         return (True, "+")
     revInputSeq = Seq(inputSeq).reverse_complement()
     match = re.search(searchSeq, revInputSeq._data)
-    if match != None and (match.start() <= mutationIndex <= match.end()):
+    if match != None and (match.start() <= (len(inputSeq) - 1 - mutationIndex) <= match.end()):
         return (True, "-")
     return (False, "")
 
@@ -80,14 +80,14 @@ def main():
         extSeq = extensionFixer(line[4], line[6], line[7], inputSeq)
         resultTup = mutationChecker(line[6], extSeq, inputSeq, mutationIndex)
         if (resultTup[0]):
-            key = int(line[8])
-            dataDict[key] = (line[3], line[5], line[6], line[7], line[9].strip("\n"), resultTup[1])
+            key = float(line[8])
+            dataDict[key] = (line[3], line[5], line[6], extSeq, line[9].strip("\n"), resultTup[1])
     inputFile.close()
     dictItems = dataDict.items()
     dictItems = sorted(dictItems)
     outputFile = open("output.txt", "w")
-    outputFile.write("Guide\tExtension\tPBS\tRT Length\tScore\tPrediction Model\tStrand of Extension\n")
-    for item in dictItems:
+    outputFile.write("Guide\tExtension\tPBS Length\tRT Length\tScore\tPrediction Model\tStrand of Extension\n")
+    for item in reversed(dictItems):
         outputFile.write(f"{item[1][0]}\t{item[1][3]}\t{item[1][1]}\t{item[1][2]}\t{item[0]}\t{item[1][4]}\t{item[1][5]}\n")
     outputFile.close()
 
