@@ -53,15 +53,17 @@ def extensionFixer(edit, RTLength, extSeq, inputSeq):
                 extSeq = extSeq[:count] + editSplit[3] + extSeq[count + 1:]
         return extSeq
 
-def mutationChecker(RTLength, extSeq, inputSeq, mutationIndex):
+def mutationChecker(RTLength, extSeq, inputSeq, mutationIndex, mutation):
     searchSeq = extSeq[:int(RTLength)]
     match = re.search(searchSeq, inputSeq)
     if match != None and (match.start() <= mutationIndex <= match.end()):
-        return (True, "+")
+        return (True, "+", inputSeq[match.start():mutationIndex] + mutation.lower() + inputSeq[mutationIndex + 1:match.end()])
     revInputSeq = Seq(inputSeq).reverse_complement()
     match = re.search(searchSeq, revInputSeq._data)
-    if match != None and (match.start() <= (len(inputSeq) - 1 - mutationIndex) <= match.end()):
-        return (True, "-")
+    newMutationIndex = len(inputSeq) - 1 - mutationIndex
+    newMutation = Seq(mutation).reverse_complement()._data
+    if match != None and (match.start() <= newMutationIndex <= match.end()):
+        return (True, "-", (revInputSeq[match.start():newMutationIndex] + newMutation.lower() + revInputSeq[newMutationIndex + 1:match.end()])._data)
     return (False, "")
 
 def main():
@@ -72,16 +74,17 @@ def main():
     for count, letter in enumerate(inputSeq):
         if letter == "(":
             mutationIndex = count + 1
+            mutation = inputSeq[count + 3]
             break
-    inputSeq = inputSeq[:mutationIndex - 1] + inputSeq[mutationIndex] + inputSeq[mutationIndex + 2:]
+    inputSeq = inputSeq[:mutationIndex - 1] + inputSeq[mutationIndex] + inputSeq[mutationIndex + 4:]
     mutationIndex -= 1
     for line in inputFile:
         line = line.split("\t")
         extSeq = extensionFixer(line[4], line[6], line[7], inputSeq)
-        resultTup = mutationChecker(line[6], extSeq, inputSeq, mutationIndex)
+        resultTup = mutationChecker(line[6], extSeq, inputSeq, mutationIndex, mutation)
         if (resultTup[0]):
             key = float(line[8])
-            dataDict[key] = (line[3], line[5], line[6], extSeq, line[9].strip("\n"), resultTup[1])
+            dataDict[key] = (line[3], line[5], line[6], resultTup[2], line[9].strip("\n"), resultTup[1])
     inputFile.close()
     dictItems = dataDict.items()
     dictItems = sorted(dictItems)
