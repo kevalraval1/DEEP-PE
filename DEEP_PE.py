@@ -55,15 +55,16 @@ def extensionFixer(edit, RTLength, extSeq, inputSeq):
 
 def mutationChecker(RTLength, extSeq, inputSeq, mutationIndex, mutation):
     searchSeq = extSeq[:int(RTLength)]
+    addOn = len(extSeq) - int(RTLength)
     match = re.search(searchSeq, inputSeq)
     if match != None and (match.start() <= mutationIndex <= match.end()):
-        return (True, "+", inputSeq[match.start():mutationIndex] + mutation.lower() + inputSeq[mutationIndex + 1:match.end()])
+        return (True, "+", inputSeq[match.start():mutationIndex] + mutation.lower() + inputSeq[mutationIndex + 1:match.end() + addOn])
     revInputSeq = Seq(inputSeq).reverse_complement()
     match = re.search(searchSeq, revInputSeq._data)
     newMutationIndex = len(inputSeq) - 1 - mutationIndex
     newMutation = Seq(mutation).reverse_complement()._data
     if match != None and (match.start() <= newMutationIndex <= match.end()):
-        return (True, "-", (revInputSeq[match.start():newMutationIndex] + newMutation.lower() + revInputSeq[newMutationIndex + 1:match.end()])._data)
+        return (True, "-", (revInputSeq[match.start():newMutationIndex] + newMutation.lower() + revInputSeq[newMutationIndex + 1:match.end() + addOn])._data)
     return (False, "")
 
 def main():
